@@ -57,7 +57,19 @@ static id new_objectForInfoDictionaryKey(id self, SEL _cmd, NSString *key) {
     return ((id (*)(id, SEL, NSString *))orig_objectForInfoDictionaryKey)(self, _cmd, key);
 }
 
+static IMP orig_bundleWithIdentifier;
+static NSBundle *new_bundleWithIdentifier(id self, SEL _cmd, NSString *ident) {
+    if ([ident isEqualToString:kOrigID]) {
+        logCaller("bundleWithIdentifier:", __builtin_return_address(0));
+        return NSBundle.mainBundle;
+    }
+    return ((NSBundle *(*)(id, SEL, NSString *))orig_bundleWithIdentifier)(self, _cmd, ident);
+}
+
 __attribute__((constructor)) static void AMFixLiteInit(void) {
+    Method m3 = class_getClassMethod(NSBundle.class, @selector(bundleWithIdentifier:));
+    if (m3) orig_bundleWithIdentifier = method_setImplementation(m3, (IMP)new_bundleWithIdentifier);
+
     Method m1 = class_getInstanceMethod(NSBundle.class, @selector(bundleIdentifier));
     if (m1) orig_bundleIdentifier = method_setImplementation(m1, (IMP)new_bundleIdentifier);
     Method m2 = class_getInstanceMethod(NSBundle.class, @selector(objectForInfoDictionaryKey:));
