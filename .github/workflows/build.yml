@@ -1,0 +1,26 @@
+name: Build AMFix
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch fishhook
+        run: |
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.c
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.h
+
+      - name: Build dylib
+        run: |
+          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc -O2 \
+            -miphoneos-version-min=14.0 \
+            -framework Foundation -framework Security \
+            -install_name @rpath/AMFix.dylib \
+            -o AMFix.dylib Tweak.m fishhook.c
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AMFix
+          path: AMFix.dylib
